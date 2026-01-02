@@ -15,6 +15,12 @@
     background:linear-gradient(135deg,#ffd1dc,#ffe6f0);
     font-family:system-ui;
     overflow:hidden;
+    transition: background 900ms ease;
+  }
+
+  /* Golden theme after wish */
+  body.golden{
+    background: radial-gradient(circle at top, #fff1b8, #ffcf6b, #ff7aa5);
   }
 
   #tap{
@@ -35,12 +41,28 @@
     text-align:center;
     padding:10vh 6vw;
     color:#fff;
+    transition: background 900ms ease;
+  }
+
+  #scene.golden{
+    background: radial-gradient(circle at top, rgba(255,241,184,.65), rgba(255,207,107,.35), rgba(255,122,165,.15));
   }
 
   .crownRow{
     font-size:44px;
     margin-bottom:10px;
     animation:pulse 1.6s ease-in-out infinite;
+    transition: filter 600ms ease, transform 600ms ease;
+    will-change: filter, transform;
+  }
+
+  /* EXTRA GLOW when wish happens */
+  .crownRow.glow{
+    filter:
+      drop-shadow(0 0 10px rgba(255,255,255,.9))
+      drop-shadow(0 0 22px rgba(255,220,120,.95))
+      drop-shadow(0 0 42px rgba(255,160,200,.85));
+    transform: scale(1.18);
   }
 
   @keyframes pulse{
@@ -52,6 +74,7 @@
     font-size:44px;
     margin:0 0 8px;
     letter-spacing:1px;
+    text-shadow:0 6px 24px rgba(0,0,0,.18);
   }
   h2{
     font-size:22px;
@@ -130,6 +153,37 @@
     0%,100%{opacity:.2; transform:scale(.9) rotate(0deg)}
     50%{opacity:.9; transform:scale(1.15) rotate(12deg)}
   }
+
+  /* Hidden wish text */
+  #wishNote{
+    display:none;
+    margin-top:14px;
+    font-size:18px;
+    opacity:.98;
+    text-shadow:0 6px 22px rgba(0,0,0,.18);
+  }
+
+  #wishSecret{
+    display:none;
+    margin-top:10px;
+    font-size:16px;
+    opacity:.92;
+  }
+
+  /* Confetti pieces */
+  .confetti{
+    position:absolute;
+    top:-20px;
+    width:10px;
+    height:14px;
+    border-radius:3px;
+    opacity:.95;
+    animation:fall linear forwards;
+    pointer-events:none;
+  }
+  @keyframes fall{
+    to{ transform: translateY(calc(100vh + 60px)) rotate(720deg); }
+  }
 </style>
 </head>
 
@@ -138,7 +192,7 @@
 <div id="tap">✨ Tap here ✨</div>
 
 <div id="scene">
-  <div class="crownRow">👑</div>
+  <div class="crownRow" id="crown">👑</div>
   <h1>HALA</h1>
   <h2>The Queen</h2>
 
@@ -150,6 +204,9 @@
     — From <b>Duraid Albarghouthi</b> 💖
   </div>
 
+  <div id="wishNote">💌 Another little secret for you…</div>
+  <div id="wishSecret"><b>Queens always get their wishes 👑✨</b></div>
+
   <div class="actions" id="actions" style="display:none;">
     <button class="btn btnSolid" id="wishBtn">Make a wish ✨</button>
     <a class="btn" id="kadimLink" target="_blank" rel="noopener"
@@ -159,22 +216,23 @@
   </div>
 </div>
 
-<!-- Romantic royalty-free music (more compatible) -->
+<!-- Romantic royalty-free song (Pixabay direct MP3) -->
 <audio id="music" loop preload="auto" playsinline>
-  <source src="https://cdn.pixabay.com/audio/2024/12/06/audio_0f3c7d0e8f.mp3?v=3" type="audio/mpeg">
+  <source src="https://cdn.pixabay.com/audio/2024/12/06/audio_0f3c7d0e8f.mp3?v=4" type="audio/mpeg">
 </audio>
-
-
 
 <script>
 const tap = document.getElementById("tap");
 const scene = document.getElementById("scene");
+const crown = document.getElementById("crown");
 const countdown = document.getElementById("countdown");
 const msg = document.getElementById("msg");
 const sig = document.getElementById("sig");
 const actions = document.getElementById("actions");
 const wishBtn = document.getElementById("wishBtn");
 const music = document.getElementById("music");
+const wishNote = document.getElementById("wishNote");
+const wishSecret = document.getElementById("wishSecret");
 
 const fullText =
 `To the best I have ever known — The Queen HALA,
@@ -224,7 +282,7 @@ function typeWriter(text){
       sig.style.display = "block";
       actions.style.display = "flex";
     }
-  }, 50);
+  }, 26); // slower (romantic)
 }
 
 function doCountdown(){
@@ -238,7 +296,7 @@ function doCountdown(){
       countdown.textContent = "For you 💖";
       typeWriter(fullText);
     }
-  }, 260); // faster
+  }, 260);
 }
 
 async function startMusic(){
@@ -250,22 +308,60 @@ async function startMusic(){
   }
 }
 
+/* Fade-in volume: from 0.05 to 0.35 over ~6s */
+function fadeInMusic(target=0.35, step=0.02, ms=320){
+  try{
+    music.volume = 0.05;
+    const id = setInterval(()=>{
+      music.volume = Math.min(target, music.volume + step);
+      if(music.volume >= target) clearInterval(id);
+    }, ms);
+  }catch(e){}
+}
+
 function addPlayButton(){
   if(document.getElementById("playMusicBtn")) return;
-
   actions.style.display = "flex";
 
   const btn = document.createElement("button");
   btn.id = "playMusicBtn";
   btn.className = "btn btnSolid";
   btn.textContent = "Play music 🎶";
-
   btn.onclick = async () => {
     const ok = await startMusic();
-    if(ok) btn.remove();
+    if(ok){
+      fadeInMusic();
+      btn.remove();
+    }
   };
-
   actions.prepend(btn);
+}
+
+function confettiBurst(n=80){
+  for(let i=0;i<n;i++){
+    const d = document.createElement("div");
+    d.className = "confetti";
+    d.style.left = Math.random()*100 + "vw";
+    d.style.background = `hsl(${Math.random()*360}, 90%, 60%)`;
+    d.style.animationDuration = (1.6 + Math.random()*1.8) + "s";
+    d.style.transform = `translateY(0) rotate(${Math.random()*180}deg)`;
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
+}
+
+function heartExplosion(){
+  for(let i=0;i<40;i++){
+    const h = document.createElement("div");
+    h.className = "heart";
+    const emojis = ["💖","💕","💗","💞","✨","🌸"];
+    h.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    h.style.left = (Math.random()*100) + "vw";
+    h.style.bottom = "0px";
+    h.style.fontSize = (22 + Math.random()*32) + "px";
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),4000);
+  }
 }
 
 tap.addEventListener("click", async () => {
@@ -279,16 +375,45 @@ tap.addEventListener("click", async () => {
   doCountdown();
 
   const ok = await startMusic();
-  if(!ok) addPlayButton();
+  if(ok){
+    fadeInMusic(); // ✅ fade-in after tap
+  }else{
+    addPlayButton(); // fallback for iPhone/in-app
+  }
 });
 
+let wishedOnce = false;
 wishBtn.onclick = () => {
+  if(wishedOnce) return;
+  wishedOnce = true;
+
+  // Crown glow surprise 👑✨
+  crown.classList.add("glow");
+  setTimeout(()=>crown.classList.remove("glow"), 2200);
+
+  // Confetti + hearts explosion
+  confettiBurst(90);
+  heartExplosion();
+
+  // Secret line + extra message
+  wishNote.style.display = "block";
+  wishSecret.style.display = "block";
+
+  // Increase music volume a bit (romantic boost)
+  try{
+    music.volume = Math.min(1, (music.volume || 0.35) + 0.20);
+  }catch(e){}
+
+  // Golden theme
+  document.body.classList.add("golden");
+  scene.classList.add("golden");
+
+  // Update headline text
+  countdown.textContent = "Wish granted ✨👑";
+
   if(navigator.vibrate) navigator.vibrate([70,40,70]);
-  countdown.textContent = "Wish granted ✨💖";
 };
 </script>
 
 </body>
 </html>
-
-

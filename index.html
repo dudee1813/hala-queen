@@ -159,9 +159,9 @@
   </div>
 </div>
 
-<!-- Romantic royalty-free music (MP3 direct) -->
-<audio id="music" loop preload="auto">
-  <source src="https://cdn.pixabay.com/audio/2022/10/26/audio_45c6a3a6f7.mp3" type="audio/mpeg">
+<!-- Romantic royalty-free music (more compatible) -->
+<audio id="music" loop preload="auto" playsinline>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3?v=2" type="audio/mpeg">
 </audio>
 
 <script>
@@ -195,7 +195,7 @@ function popHearts(){
     h.style.fontSize = (18 + Math.random()*26) + "px";
     document.body.appendChild(h);
     setTimeout(()=>h.remove(),4000);
-  },260);
+  },240);
 }
 
 function sparkles(){
@@ -222,7 +222,7 @@ function typeWriter(text){
       sig.style.display = "block";
       actions.style.display = "flex";
     }
-  }, 18);
+  }, 14);
 }
 
 function doCountdown(){
@@ -236,26 +236,51 @@ function doCountdown(){
       countdown.textContent = "For you 💖";
       typeWriter(fullText);
     }
-  }, 520);
+  }, 260); // faster
 }
 
-tap.onclick = async () => {
+async function startMusic(){
+  try{
+    await music.play();
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+function addPlayButton(){
+  if(document.getElementById("playMusicBtn")) return;
+
+  actions.style.display = "flex";
+
+  const btn = document.createElement("button");
+  btn.id = "playMusicBtn";
+  btn.className = "btn btnSolid";
+  btn.textContent = "Play music 🎶";
+
+  btn.onclick = async () => {
+    const ok = await startMusic();
+    if(ok) btn.remove();
+  };
+
+  actions.prepend(btn);
+}
+
+tap.addEventListener("click", async () => {
   tap.style.display = "none";
   scene.style.display = "block";
 
-  // vibration
   if(navigator.vibrate) navigator.vibrate([120,80,120]);
-
-  // start music after user gesture (important for iPhone)
-  try { await music.play(); } catch(e) {}
 
   sparkles();
   popHearts();
   doCountdown();
-};
+
+  const ok = await startMusic();
+  if(!ok) addPlayButton();
+});
 
 wishBtn.onclick = () => {
-  // cute extra surprise
   if(navigator.vibrate) navigator.vibrate([70,40,70]);
   countdown.textContent = "Wish granted ✨💖";
 };
